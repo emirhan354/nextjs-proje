@@ -1,33 +1,38 @@
 "use client";
+
 import { useState } from "react";
 
 export const SafeInput = () => {
   const [value, setValue] = useState("");
-  const [error, setError] = useState("");
+  const [hasSpecialChar, setHasSpecialChar] = useState(false);
 
-  const forbidden = /[\/\-:;()$€£%&=?<>#"'!@~^*{}\[\]|\\]/;
+  // Tüm özel karakterleri kapsayan regex
+  const specialCharRegex = /[^a-zA-Z0-9\s]/;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setValue(newValue);
-
-    if (forbidden.test(newValue)) {
-      setError("Özel karakterlere izin verilmez.");
-    } else {
-      setError("");
-    }
+    const inputValue = e.target.value;
+    setValue(inputValue);
+    setHasSpecialChar(specialCharRegex.test(inputValue));
   };
 
   return (
-    <div className="flex flex-col w-full max-w-md">
+    <div className="flex flex-col space-y-2 w-full max-w-md">
+      <label htmlFor="safe-input" className="text-sm font-medium text-gray-100">
+        Sadece harf ve rakam giriniz
+      </label>
       <input
+        id="safe-input"
         type="text"
         value={value}
         onChange={handleChange}
-        placeholder="Bir şeyler yaz..."
-        className="px-4 py-2 border border-white bg-black text-white rounded outline-none"
+        className="p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+        placeholder="Metin girin"
       />
-      {error && <span className="text-red-500 text-sm mt-2">{error}</span>}
+      {hasSpecialChar && (
+        <p className="text-red-500 text-sm">
+          Özel karakter kullanılamaz. Lütfen sadece harf veya rakam giriniz.
+        </p>
+      )}
     </div>
   );
 };

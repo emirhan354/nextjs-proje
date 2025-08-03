@@ -1,14 +1,13 @@
 "use client";
-
 import Link from "next/link";
 
-export const Navbar = () => {
+export const Header = () => {
   return (
-    <nav className="bg-gray-900 text-white p-4 flex justify-between items-center">
-      <Link href="/" className="text-xl font-bold hover:underline">
+    <header className="bg-gray-900 text-white p-4 flex justify-between items-center">
+      <Link href="/" className="text-2xl font-bold hover:underline">
         LOGO
       </Link>
-      <div className="space-x-4">
+      <nav className="space-x-4">
         <Link href="/" className="hover:underline">
           Anasayfa
         </Link>
@@ -18,7 +17,7 @@ export const Navbar = () => {
         <Link href="/contact" className="hover:underline">
           İletişim
         </Link>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 };
