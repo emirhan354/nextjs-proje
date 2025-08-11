@@ -7,6 +7,7 @@
   --foreground: #171717;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius: 12px; /* ek: kart/buton radius */
 }
 
 /* 🌙 Karanlık tema desteği */
@@ -24,4 +25,84 @@ body {
   font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* -------------------- */
+/*  Responsive helpers  */
+/* -------------------- */
+
+/* Tek satırda sağlam container */
+.container {
+  width: min(100%, 960px);
+  margin-inline: auto;
+  padding-inline: clamp(12px, 3vw, 24px);
+}
+
+/* Kart */
+.card {
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: clamp(12px, 2.5vw, 16px);
+}
+
+/* Input */
+.input {
+  width: 100%;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #fff;
+  color: #111;
+  outline: none;
+  padding: 12px 14px;
+}
+.input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35); /* mavi focus */
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--radius) - 2px);
+  color: #fff;
+  padding: 12px 14px;
+  transition: filter 0.15s ease;
+}
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn:hover {
+  filter: brightness(1.05);
+}
+
+.btn-primary {
+  background: #2563eb;
+} /* mavi */
+.btn-danger {
+  background: #dc2626;
+} /* kırmızı */
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Başlık boyutu clamp ile */
+.h1 {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 700;
+}
+
+/* Küçük ekran tostu kenarlardan içeri al */
+.toast-wrap {
+  right: 16px !important;
+  bottom: 16px !important;
+}
+@media (max-width: 480px) {
+  .toast-wrap {
+    right: 8px !important;
+    left: 8px !important;
+    bottom: 8px !important;
+  }
 }

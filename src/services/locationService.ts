@@ -1,11 +1,23 @@
-import { Location } from "@/models/Location";
-import { locations } from "@/lib/locations"; // mock veriyi buradan al
+// src/services/locationService.ts
+import type { Location } from "@/models/Location";
+import { locations as mockLocations } from "@/lib/locations";
+// import { api } from "@/services/api"; // API'ye geçince aç
 
-export const fetchLocations = async (): Promise<Location[] | null> => {
+const USE_MOCK = true; // Gerçek API'ye geçince false yap
+
+export async function getLocations(): Promise<Location[]> {
   try {
-    return locations; // API yerine mock veri
+    if (USE_MOCK) {
+      return mockLocations; // Mock veri döner
+    }
+
+    // API örneği:
+    // const { data } = await api.get("/locations");
+    // return Array.isArray(data?.locations) ? data.locations : [];
+
+    return []; // Emniyet fallback
   } catch (error) {
     console.error("Konum verileri alınırken hata oluştu:", error);
-    return null;
+    return []; // UI patlamasın diye boş dizi döner
   }
-};
+}

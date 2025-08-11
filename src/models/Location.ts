@@ -1,5 +1,7 @@
+// src/models/Location.ts
 export type Location = {
-  position: [number, number];
+  id?: number; // mock veride yoksa sorun olmasın
+  position: [number, number]; // [lat, lng]
   title: string;
-  description: string;
+  description: string; // <-- doğru alan adı
 };

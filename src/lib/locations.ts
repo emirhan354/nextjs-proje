@@ -1,8 +1,9 @@
+// src/lib/locations.ts
 import type { Location } from "@/models/Location";
 
 export const locations: Location[] = [
   {
-    position: [40.945, 29.16],
+    position: [40.945, 29.16], // [latitude, longitude]
     title: "Bumerang Plaza",
     description: "Kartal'da bulunan modern ofis plazası.",
   },

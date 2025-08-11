@@ -14,11 +14,12 @@ const pinIcon = new L.Icon({
 });
 
 type Props = {
-  locations: Location[];
+  locations?: Location[];
 };
 
-export const Map = ({ locations }: Props) => {
-  const center = locations[0]?.position ?? [40.945, 29.16];
+export const Map = ({ locations = [] }: Props) => {
+  const fallbackCenter: [number, number] = [40.945, 29.16];
+  const center = (locations[0]?.position as [number, number]) ?? fallbackCenter;
 
   return (
     <MapContainer

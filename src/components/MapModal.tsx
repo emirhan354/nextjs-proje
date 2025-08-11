@@ -1,12 +1,16 @@
 "use client";
-import { Map } from "./Map";
-import { locations } from "@/lib/locations";
+import dynamic from "next/dynamic";
+import type { Location } from "@/models/Location";
+
+// SSR hatasını önlemek için dinamik import
+const Map = dynamic(() => import("./Map").then((m) => m.Map), { ssr: false });
 
 type Props = {
   onClose: () => void;
+  locations?: Location[];
 };
 
-export const MapModal = ({ onClose }: Props) => {
+export const MapModal = ({ onClose, locations = [] }: Props) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
       <div className="bg-white p-4 rounded-lg relative w-full max-w-4xl">
