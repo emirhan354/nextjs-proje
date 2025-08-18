@@ -3,62 +3,77 @@ import axios, { AxiosError } from "axios";
 
 // .env.local -> NEXT_PUBLIC_API_URL=http://localhost:3001/api
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
   withCredentials: true,
   timeout: 20000,
-  // 4xx/5xx'leri catch'e düşür
+  // Yalnızca 2xx başarı saysın; diğerleri catch'e düşsün
   validateStatus: (s) => s >= 200 && s < 300,
 });
 
-// İsteklere token ekle
+// İsteklere token ekle (TS güvenli)
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     try {
       const token = localStorage.getItem("token");
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch {}
+      if (token) {
+        // headers objesini garanti et ve tip uyuşmazlığını önlemek için mutasyon yap
+        config.headers = config.headers ?? {};
+        (config.headers as any).Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      /* no-op */
+    }
   }
   return config;
 });
 
-// 401'de akıllı yönlendirme
+// 401'de akıllı yönlendirme (login çağrısını ve login sayfasını es geç)
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
     const status = error.response?.status;
-    if (status !== 401 || typeof window === "undefined") {
+
+    // SSR ortamında ya da 401 değilse: aynen fırlat
+    if (typeof window === "undefined" || status !== 401) {
       return Promise.reject(error);
     }
 
-    // İstek URL'sini kesin tespit et (relative/absolute fark etmez)
+    // İstek URL'sini normalize et (relative/absolute fark etmesin)
     const reqUrl = (() => {
-      const u = (error.config?.url || "").toString();
-      if (!u) return "";
-      // absolute ise path'i al, değilse direkt u
+      const raw = (error.config?.url || "").toString();
+      if (!raw) return "";
       try {
-        const abs = new URL(u, error.config?.baseURL || window.location.origin);
+        const abs = new URL(
+          raw,
+          error.config?.baseURL || window.location.origin
+        );
         return abs.pathname + abs.search;
       } catch {
-        return u;
+        return raw;
       }
     })();
 
     const isLoginCall = /\/auth\/login(?:\?|$)/.test(reqUrl);
     const onLoginPage = window.location.pathname.startsWith("/login");
 
-    // Login denemesinde veya login sayfasındayken redirect yapma
+    // Login isteği sırasında veya login sayfasındayken redirect yapma
     if (isLoginCall || onLoginPage) {
       return Promise.reject(error);
     }
 
-    // Token'ı temizle ve login'e gönder
+    // Token'ı temizle ve login'e yönlendir
     try {
       localStorage.removeItem("token");
-    } catch {}
-    // middleware için cookie'yi de sil
-    document.cookie = "token=; Max-Age=0; Path=/; SameSite=Lax";
+    } catch {
+      /* no-op */
+    }
+    if (typeof document !== "undefined") {
+      document.cookie = "token=; Max-Age=0; Path=/; SameSite=Lax";
+    }
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
 
-    window.location.href = "/login";
     return Promise.reject(error);
   }
 );

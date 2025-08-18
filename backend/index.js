@@ -11,9 +11,11 @@ const redisClient = require("./redisClient");
 
 // CORS ayarı (önemli: credentials true ve origin localhost:3000)
 app.use(
-  require("cors")({
+  cors({
     origin: "http://localhost:3000",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"], // <-- EKLENDİ
   })
 );
 
@@ -24,10 +26,12 @@ app.use(express.json());
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const contactRoutes = require("./routes/contact"); // <-- EKLENDİ
+const videosRouter = require("./routes/videos");
 
 app.use("/api", authRoutes);
 app.use("/api", profileRoutes);
-app.use("/api", contactRoutes); // <-- EKLENDİ
+app.use("/api", contactRoutes);
+app.use("/api/videos", videosRouter); // önce /videos idi
 
 // Basit kontrol
 app.get("/", (req, res) => res.send("Backend çalışıyor!"));

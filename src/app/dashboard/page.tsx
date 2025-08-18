@@ -8,6 +8,11 @@ import { MapModal } from "@/components/MapModal";
 import type { Location } from "@/models/Location";
 import { getLocations } from "@/services/locationService";
 
+// Video listesi
+import VideoList from "@/components/VideoList";
+import { getVideos } from "@/services/video";
+import type { VideoItem } from "@/models/Video";
+
 type User = {
   id: number;
   email: string;
@@ -18,6 +23,7 @@ type User = {
 export default function Dashboard() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
+
   const [user, setUser] = useState<User | null>(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
@@ -93,10 +99,11 @@ export default function Dashboard() {
       document.removeEventListener("visibilitychange", onVisibility);
       if (logoutTimerRef.current) window.clearTimeout(logoutTimerRef.current);
     };
-    // dependency boş, mevcut akışı bozmayalım
+    // dependency boş, mevcut akışı bozma
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Haritayı açarken lokasyonları çek
+  // Genel haritayı açarken lokasyonları çek
   const openMap = async () => {
     setMapOpen(true);
     if (locations.length === 0) {
@@ -112,6 +119,18 @@ export default function Dashboard() {
     }
   };
 
+  // Video satırından “Haritayı Göster” → tek marker ile modal aç
+  const handleShowVideoOnMap = (v: VideoItem) => {
+    const loc: Location = {
+      id: v.id, // <-- Location tipinde id zorunlu
+      position: [v.lat, v.lng],
+      title: v.name,
+      description: v.description || new Date(v.recordedAt).toLocaleString(),
+    };
+    setLocations([loc]);
+    setMapOpen(true);
+  };
+
   if (loading) return <p style={{ padding: 16 }}>Yükleniyor...</p>;
   if (err) return <p style={{ color: "red", padding: 16 }}>{err}</p>;
 
@@ -122,6 +141,7 @@ export default function Dashboard() {
       </h1>
 
       <div style={{ display: "grid", gap: 12 }}>
+        {/* Kullanıcı / Kontrol paneli */}
         <div
           style={{ padding: 12, border: "1px solid #eee", borderRadius: 12 }}
         >
@@ -146,10 +166,10 @@ export default function Dashboard() {
                 borderRadius: 10,
                 cursor: "pointer",
                 background: "#fff",
-                color: "#111", // yazı rengi
+                color: "#111",
               }}
             >
-              Haritayı Aç
+              Genel Haritayı Aç
             </button>
 
             <button
@@ -172,6 +192,14 @@ export default function Dashboard() {
               Lokasyonlar yükleniyor…
             </p>
           )}
+        </div>
+
+        {/* Video listesi (arama + tarih + sıralama + debounce) */}
+        <div
+          style={{ padding: 12, border: "1px solid #eee", borderRadius: 12 }}
+        >
+          <h2 style={{ fontSize: 18, fontWeight: 600 }}>Video Kayıtları</h2>
+          <VideoList fetcher={getVideos} onShowMap={handleShowVideoOnMap} />
         </div>
       </div>
 
