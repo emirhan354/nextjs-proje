@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +11,11 @@ import { getLocations } from "@/services/locationService";
 import VideoList from "@/components/VideoList";
 import { getVideos } from "@/services/video";
 import type { VideoItem } from "@/models/Video";
+
+// Şirket formu
+import AddCompanyForm from "@/components/AddCompanyForm";
+import { getCompanies } from "@/services/company";
+import type { Company } from "@/models/Company";
 
 type User = {
   id: number;
@@ -33,6 +37,11 @@ export default function Dashboard() {
   const [mapOpen, setMapOpen] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [locLoading, setLocLoading] = useState(false);
+
+  // Şirket modal & liste
+  const [companyModalOpen, setCompanyModalOpen] = useState(false);
+  const [companiesModalOpen, setCompaniesModalOpen] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
 
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -94,12 +103,16 @@ export default function Dashboard() {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    // ✅ ilk yüklemede şirketleri çek
+    getCompanies({ q: "" })
+      .then(setCompanies)
+      .catch(() => showError("Şirketler alınamadı"));
+
     return () => {
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVisibility);
       if (logoutTimerRef.current) window.clearTimeout(logoutTimerRef.current);
     };
-    // dependency boş, mevcut akışı bozma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -122,7 +135,7 @@ export default function Dashboard() {
   // Video satırından “Haritayı Göster” → tek marker ile modal aç
   const handleShowVideoOnMap = (v: VideoItem) => {
     const loc: Location = {
-      id: v.id, // <-- Location tipinde id zorunlu
+      id: v.id,
       position: [v.lat, v.lng],
       title: v.name,
       description: v.description || new Date(v.recordedAt).toLocaleString(),
@@ -173,6 +186,34 @@ export default function Dashboard() {
             </button>
 
             <button
+              onClick={() => setCompanyModalOpen(true)}
+              style={{
+                padding: "10px 14px",
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                background: "#2563eb",
+                color: "#fff",
+              }}
+            >
+              + Şirket Ekle
+            </button>
+
+            <button
+              onClick={() => setCompaniesModalOpen(true)}
+              style={{
+                padding: "10px 14px",
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                background: "#047857",
+                color: "#fff",
+              }}
+            >
+              Şirketleri Gör
+            </button>
+
+            <button
               onClick={doLogout}
               style={{
                 padding: "10px 14px",
@@ -194,7 +235,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Video listesi (arama + tarih + sıralama + debounce) */}
+        {/* Video listesi */}
         <div
           style={{ padding: 12, border: "1px solid #eee", borderRadius: 12 }}
         >
@@ -202,6 +243,139 @@ export default function Dashboard() {
           <VideoList fetcher={getVideos} onShowMap={handleShowVideoOnMap} />
         </div>
       </div>
+
+      {/* ✅ Şirket ekleme modalı */}
+      {companyModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: 20,
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 400,
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setCompanyModalOpen(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                border: "none",
+                background: "transparent",
+                fontSize: 20,
+                cursor: "pointer",
+              }}
+            >
+              ✖
+            </button>
+
+            <h2 style={{ marginBottom: 12 }}>Yeni Şirket Ekle</h2>
+            <AddCompanyForm
+              onAdded={async () => {
+                await getCompanies({ q: "" }).then(setCompanies);
+                setCompanyModalOpen(false);
+                showSuccess("Şirket başarıyla eklendi");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Şirketleri gör modalı */}
+      {companiesModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "#1f1f1f", // koyu gri arka plan
+              padding: 20,
+              borderRadius: 12,
+              width: "100%",
+              maxWidth: 900,
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setCompaniesModalOpen(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                border: "none",
+                background: "transparent",
+                fontSize: 20,
+                cursor: "pointer",
+                color: "#fff",
+              }}
+            >
+              ✖
+            </button>
+
+            <h2 style={{ marginBottom: 16, color: "white" }}>Şirketler</h2>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+                gap: 16,
+              }}
+            >
+              {companies.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    border: "1px solid #333",
+                    borderRadius: 10,
+                    padding: 12,
+                    background: "#fff", // kart beyaz
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.4)", // gölge
+                  }}
+                >
+                  <h3 style={{ marginBottom: 6, color: "#2563eb" }}>
+                    {c.name}
+                  </h3>
+                  {c.address && (
+                    <p style={{ margin: 0, fontSize: 14, color: "#111" }}>
+                      📍 {c.address}
+                    </p>
+                  )}
+                  {c.email && (
+                    <p style={{ margin: 0, fontSize: 14, color: "#047857" }}>
+                      ✉️ {c.email}
+                    </p>
+                  )}
+                  {c.phone && (
+                    <p style={{ margin: 0, fontSize: 14, color: "#dc2626" }}>
+                      📞 {c.phone}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {mapOpen && (
         <MapModal onClose={() => setMapOpen(false)} locations={locations} />

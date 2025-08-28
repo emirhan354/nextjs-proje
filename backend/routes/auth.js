@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL_MIN = 20;
 
 // POST /api/auth/register
-router.post("/auth/register", async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password)
@@ -28,7 +28,7 @@ router.post("/auth/register", async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post("/auth/login", async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password)
@@ -58,7 +58,7 @@ router.post("/auth/login", async (req, res) => {
 });
 
 // POST /api/auth/logout
-router.post("/auth/logout", verifyToken, async (req, res) => {
+router.post("/logout", verifyToken, async (req, res) => {
   try {
     const auth = req.headers.authorization || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;

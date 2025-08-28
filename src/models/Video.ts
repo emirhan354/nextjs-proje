@@ -1,9 +1,10 @@
-// src/models/Video.ts
-export type VideoItem = {
+export interface VideoItem {
   id: number;
   name: string;
-  recordedAt: string; // ISO
+  recordedAt: string;
   lat: number;
   lng: number;
   description?: string;
-};
+
+  companyName?: string;
+}

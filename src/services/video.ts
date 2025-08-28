@@ -10,7 +10,20 @@ export type VideoQuery = {
   order?: "asc" | "desc";
 };
 
+// 🔹 Videoları listele
 export async function getVideos(params?: VideoQuery): Promise<VideoItem[]> {
   const { data } = await api.get("/videos", { params });
   return data?.items ?? [];
+}
+
+// 🔹 Bir videoyu şirkete eşleştir (kalıcı)
+// ✅ Artık doğru endpoint olan POST /videos/:id/company kullanılıyor
+export async function assignCompanyToVideo(
+  videoId: number,
+  companyId: number
+): Promise<VideoItem> {
+  const { data } = await api.post(`/videos/${videoId}/company`, {
+    companyId,
+  });
+  return data;
 }

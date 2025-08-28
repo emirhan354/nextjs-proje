@@ -1,9 +1,10 @@
 // backend/routes/videos.js
 const express = require("express");
 const router = express.Router();
-const verifyToken = require("../middleware/verifyToken");
+const { COMPANIES } = require("./companies"); // ✅ Tek kaynaktan şirketleri al
 
-const VIDEOS = [
+// Mock videolar
+let VIDEOS = [
   {
     id: 1,
     name: "Kamera-01_2025-08-10_09-30",
@@ -11,6 +12,7 @@ const VIDEOS = [
     lat: 40.945,
     lng: 29.16,
     description: "Kartal / Bumerang Plaza girişi",
+    companyId: null,
   },
   {
     id: 2,
@@ -19,42 +21,65 @@ const VIDEOS = [
     lat: 40.9825,
     lng: 29.0883,
     description: "Doğuş Üni. ön kapı",
+    companyId: null,
   },
 ];
 
-// GET /api/videos?q=&from=2025-08-10&to=2025-08-12&sort=recordedAt&order=desc
-router.get("/", verifyToken, (req, res) => {
-  const q = (req.query.q || "").toString().trim().toLocaleLowerCase("tr");
-  const from = req.query.from
-    ? new Date(`${req.query.from}T00:00:00Z`).getTime()
-    : Number.NEGATIVE_INFINITY;
-  const to = req.query.to
-    ? new Date(`${req.query.to}T23:59:59Z`).getTime()
-    : Number.POSITIVE_INFINITY;
-  const sort = (req.query.sort || "recordedAt").toString(); // "recordedAt" | "name"
-  const order = (req.query.order || "desc").toString(); // "asc" | "desc"
+// Yardımcı → companyName ekle
+function decorate(video) {
+  const company = video.companyId
+    ? COMPANIES.find((c) => c.id === video.companyId)
+    : null;
+  return { ...video, companyName: company ? company.name : null };
+}
 
-  let data = VIDEOS.filter((v) => {
-    const hay = `${v.name ?? ""} ${v.description ?? ""}`.toLocaleLowerCase(
-      "tr"
+// ✅ Listeleme → GET /api/videos
+router.get("/", (req, res) => {
+  let items = VIDEOS.map(decorate);
+
+  const { q, from, to, sort = "recordedAt", order = "desc" } = req.query;
+
+  if (q) {
+    const s = String(q).toLowerCase();
+    items = items.filter(
+      (v) =>
+        v.name.toLowerCase().includes(s) ||
+        (v.description || "").toLowerCase().includes(s) ||
+        (v.companyName || "").toLowerCase().includes(s)
     );
-    const textOk = q === "" || hay.includes(q);
-    const t = new Date(v.recordedAt).getTime();
-    const dateOk = t >= from && t <= to;
-    return textOk && dateOk;
-  });
+  }
 
-  data.sort((a, b) => {
-    let cmp = 0;
-    if (sort === "name") {
-      cmp = a.name.localeCompare(b.name, "tr");
-    } else {
-      cmp = new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime();
-    }
-    return order === "asc" ? cmp : -cmp;
-  });
+  if (from) {
+    const f = new Date(from);
+    if (!isNaN(+f)) items = items.filter((v) => new Date(v.recordedAt) >= f);
+  }
+  if (to) {
+    const t = new Date(to);
+    if (!isNaN(+t)) items = items.filter((v) => new Date(v.recordedAt) <= t);
+  }
 
-  res.json({ items: data });
+  items.sort((a, b) => {
+    if (sort === "name") return a.name.localeCompare(b.name);
+    return new Date(a.recordedAt) - new Date(b.recordedAt);
+  });
+  if (String(order).toLowerCase() === "desc") items.reverse();
+
+  res.json({ items });
+});
+
+// ✅ Video ↔ Şirket eşleştirme → POST /api/videos/:id/company
+router.post("/:id/company", (req, res) => {
+  const id = Number(req.params.id);
+  const { companyId } = req.body;
+
+  const video = VIDEOS.find((v) => v.id === id);
+  if (!video) return res.status(404).json({ message: "Video bulunamadı" });
+
+  const company = COMPANIES.find((c) => c.id === Number(companyId));
+  if (!company) return res.status(400).json({ message: "Geçersiz şirket ID" });
+
+  video.companyId = company.id;
+  res.json(decorate(video));
 });
 
 module.exports = router;

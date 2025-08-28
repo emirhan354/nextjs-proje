@@ -4,7 +4,7 @@ const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
 
 // GET /api/profile
-router.get("/profile", verifyToken, (req, res) => {
+router.get("/", verifyToken, (req, res) => {
   res.json({
     message: "Profil bilgileri",
     user: {

@@ -1,8 +1,11 @@
-// src/components/VideoList.tsx
 "use client";
 import { useEffect, useState } from "react";
 import type { VideoItem } from "@/models/Video";
 import type { VideoQuery } from "@/services/video";
+import { assignCompanyToVideo } from "@/services/video";
+import CompanySelectModal from "@/components/CompanySelectModal";
+import type { Company } from "@/models/Company";
+import { useToast } from "@/components/ToastProvider";
 
 type Props = {
   fetcher: (params?: VideoQuery) => Promise<VideoItem[]>;
@@ -16,6 +19,8 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  const { showSuccess, showError } = useToast();
+
   // filtre state
   const [q, setQ] = useState("");
   const [from, setFrom] = useState<string>("");
@@ -27,6 +32,9 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
   const [dq, setDq] = useState(q);
   const [dFrom, setDFrom] = useState(from);
   const [dTo, setDTo] = useState(to);
+
+  // şirket eşleştirme için state
+  const [selectedVideoId, setSelectedVideoId] = useState<number | null>(null);
 
   // debounce
   useEffect(() => {
@@ -54,12 +62,33 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
       .finally(() => setLoading(false));
   }, [fetcher, dq, dFrom, dTo, sort, order]);
 
+  // ✅ şirket seçildiğinde backend'e sadece companyId gönderiyoruz
+  const handleSelectCompany = async (company: Company) => {
+    if (selectedVideoId !== null) {
+      try {
+        const updated = await assignCompanyToVideo(selectedVideoId, company.id);
+
+        // backend’den dönen güncel video objesiyle state’i güncelle
+        setItems((prev) =>
+          prev.map((v) => (v.id === updated.id ? updated : v))
+        );
+
+        showSuccess(
+          `Video "${updated.name}" başarıyla "${updated.companyName}" ile eşleştirildi!`
+        );
+      } catch (e) {
+        showError("Eşleştirme başarısız oldu");
+      } finally {
+        setSelectedVideoId(null);
+      }
+    }
+  };
+
   // ——— UI ———
   if (loading)
     return <div className="mt-3 text-white/80">Videolar yükleniyor…</div>;
   if (err) return <div className="mt-3 text-red-500">{err}</div>;
 
-  // sıralama
   const toggleSort = (key: "recordedAt" | "name") => {
     if (sort !== key) {
       setSort(key);
@@ -141,6 +170,7 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
               >
                 Kayıt Tarihi {sortArrow("recordedAt")}
               </th>
+              <th className="p-3 text-left">Şirket</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -148,7 +178,7 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td className="p-3 text-white/70" colSpan={3}>
+                <td className="p-3 text-white/70" colSpan={4}>
                   Kriterlere uygun kayıt bulunamadı.
                 </td>
               </tr>
@@ -162,12 +192,21 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
                   <td className="p-3 align-middle text-white/90">
                     {new Date(v.recordedAt).toLocaleString()}
                   </td>
-                  <td className="p-3 align-middle text-right">
+                  <td className="p-3 align-middle text-white/90">
+                    {v.companyName || "-"}
+                  </td>
+                  <td className="p-3 align-middle text-right space-x-2">
                     <button
                       onClick={() => onShowMap(v)}
                       className="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-sm text-white hover:bg-white/10 active:scale-[.98] transition"
                     >
                       Haritayı Göster
+                    </button>
+                    <button
+                      onClick={() => setSelectedVideoId(v.id)}
+                      className="inline-flex items-center rounded-md border border-blue-500 px-3 py-1.5 text-sm text-blue-400 hover:bg-blue-500/20 active:scale-[.98] transition"
+                    >
+                      Eşleştir
                     </button>
                   </td>
                 </tr>
@@ -176,6 +215,14 @@ export default function VideoList({ fetcher, onShowMap }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* ✅ Şirket seçme modalı */}
+      {selectedVideoId !== null && (
+        <CompanySelectModal
+          onClose={() => setSelectedVideoId(null)}
+          onSelect={handleSelectCompany}
+        />
+      )}
     </div>
   );
 }

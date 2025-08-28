@@ -27,18 +27,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 401'de akıllı yönlendirme (login çağrısını ve login sayfasını es geç)
+// 401de yönlendirme (login çağrısını ve login sayfasını es geç)
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
     const status = error.response?.status;
 
-    // SSR ortamında ya da 401 değilse: aynen fırlat
+    // SSR ortamında ya da 401 değilse ,  aynen yolla
     if (typeof window === "undefined" || status !== 401) {
       return Promise.reject(error);
     }
 
-    // İstek URL'sini normalize et (relative/absolute fark etmesin)
+    // İstek URL'sini normalize et (relative/absolute fark etmesinler)
     const reqUrl = (() => {
       const raw = (error.config?.url || "").toString();
       if (!raw) return "";
